@@ -5,7 +5,7 @@ FROM ibm-semeru-runtimes:open-21-jdk AS builder
 WORKDIR /build
 
 # Copy the entire source code context which includes the distribution tarball.
-COPY..
+COPY . .
 
 # Find the distribution tarball and extract it.
 RUN KAFKA_TGZ=$(find. -name 'kafka_*.tgz' | head -n 1) && \
