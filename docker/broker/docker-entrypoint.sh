@@ -3,7 +3,7 @@ set -e
 
 # If KAFKA_CLUSTER_ID is not set, generate a new random UUID.
 # This is required for the first-time format of a new KRaft cluster.
-if; then
+if  -z "${KAFKA_CLUSTER_ID}" then
     export KAFKA_CLUSTER_ID=$(kafka-storage.sh random-uuid)
 fi
 echo "Kafka Cluster ID: ${KAFKA_CLUSTER_ID}"
