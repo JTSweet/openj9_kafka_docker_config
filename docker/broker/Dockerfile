@@ -53,7 +53,7 @@ RUN echo "CDS priming run completed."
 # --- Final Container Configuration ---
 
 # Copy a generic, simplified entrypoint script
-COPY docker-entrypoint.sh /
+COPY docker/broker/docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 
 # Expose Kafka ports
