@@ -58,7 +58,7 @@ RUN echo "CDS priming run for Kafka Connect completed."
 # --- Final Container Configuration ---
 
 # Copy the simplified entrypoint script for Kafka Connect
-COPY connect-docker-entrypoint.sh /
+COPY docker/connect/docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 
 # Expose the default Kafka Connect REST API port
