@@ -1,3 +1,6 @@
+# Use the official IBM Semeru Runtime with OpenJ9 JDK 21 as the base image
+FROM ibm-semeru-runtimes:open-21-jdk
+
 # Set environment variables
 ENV KAFKA_VERSION=4.0.0
 ENV SCALA_VERSION=2.13
@@ -50,12 +53,12 @@ RUN KAFKA_HEAP_OPTS="-Xmx256m -Xms256m" \
 
 # --- Final Container Configuration ---
 
-# Copy the simplified entrypoint script
+# Copy a generic, simplified entrypoint script
 COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 
 # Expose Kafka ports
-EXPOSE 9092
+EXPOSE 9092 9093
 
 # Set the entrypoint
 ENTRYPOINT ["/docker-entrypoint.sh"]
