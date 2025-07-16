@@ -14,5 +14,8 @@ if [! -f "/var/lib/kafka/data/meta.properties" ]; then
     kafka-storage.sh format -t "$KAFKA_CLUSTER_ID" -c "$KAFKA_HOME/config/kraft/server.properties"
 fi
 
+# Set OpenJ9 specific JVM options, overriding the script defaults which are for HotSpot.
+export KAFKA_OPTS="-Xshareclasses -Xquickstart -Xgcpolicy:gencon"
+
 # Execute the command passed to the entrypoint (e.g., kafka-server-start.sh)
 exec "$@"
