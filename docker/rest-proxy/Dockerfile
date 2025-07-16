@@ -1,5 +1,5 @@
 # Stage 1: Builder
-FROM ibm-semeru-runtimes:open-21-jdk AS builder
+FROM ibm-semeru-runtimes:open-21.0.7_6-jdk-jammy AS builder
 WORKDIR /build
 COPY . .
 RUN KAFKA_TGZ=$(find . -name 'kafka_*.tgz' | head -n 1) && \
@@ -8,7 +8,7 @@ RUN KAFKA_TGZ=$(find . -name 'kafka_*.tgz' | head -n 1) && \
 
 # Stage 2: Final Image
 # Use the full JDK base image for the final runtime to include diagnostic tools.
-FROM ibm-semeru-runtimes:open-21-jdk
+FROM ibm-semeru-runtimes:open-21.0.7_6-jdk-jammy
 ENV KAFKA_HOME=/opt/kafka
 ENV PATH=$PATH:$KAFKA_HOME/bin
 
