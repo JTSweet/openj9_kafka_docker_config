@@ -1,5 +1,5 @@
 # Stage 1: Build the application
-FROM maven:3.8-ibm-semeru-21-jdk AS builder
+FROM ibm-semeru-runtimes:open-21.0.7_6-jdk-jammy AS builder
 
 WORKDIR /app
 COPY pom.xml .
