@@ -53,7 +53,7 @@ RUN export KAFKA_CDS_CACHE_NAME="kafka-connect" && \
     export KAFKA_OPTS="-Xshareclasses:name=${KAFKA_CDS_CACHE_NAME},cacheDir=/opt/share/class_cache,persistent" && \
     timeout 60s connect-distributed.sh ${KAFKA_HOME}/config/connect-distributed-prime.properties 
 
-    echo "CDS priming run for Kafka Connect completed."
+RUN echo "CDS priming run for Kafka Connect completed."
 
 # --- Final Container Configuration ---
 
