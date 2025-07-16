@@ -9,7 +9,7 @@ fi
 echo "Advertised REST Host Name: ${CONNECT_REST_ADVERTISED_HOST_NAME}"
 
 # Set OpenJ9 specific JVM options
-export KAFKA_OPTS="-Xshareclasses -Xquickstart -Xgcpolicy:gencon"
+export KAFKA_OPTS="-Xshareclasses:none -Xgcpolicy:gencon"
 
 # Execute the command passed to the entrypoint
 exec "$@"
