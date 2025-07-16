@@ -1,0 +1,1 @@
+# openj9_kafka_docker_config
