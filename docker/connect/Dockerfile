@@ -2,7 +2,7 @@
 FROM ibm-semeru-runtimes:open-21-jdk AS builder
 WORKDIR /build
 COPY . .
-RUN KAFKA_TGZ=$(find. -name 'kafka_*.tgz' | head -n 1) && \
+RUN KAFKA_TGZ=$(find . -name 'kafka_*.tgz' | head -n 1) && \
     tar -xzf "$KAFKA_TGZ" -C /opt && \
     mv /opt/kafka_* /opt/kafka
 
