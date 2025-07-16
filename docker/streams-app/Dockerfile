@@ -15,7 +15,7 @@ FROM ibm-semeru-runtimes:open-21-jdk
 WORKDIR /app
 
 # Copy the application JAR from the builder stage
-COPY --from=builder /app/target/wordcount-app-1.0-SNAPSHOT.jar.
+COPY --from=builder /app/target/wordcount-app-1.0-SNAPSHOT.jar .
 
 # The bootstrap servers will be passed via environment variable
 ENV KAFKA_BOOTSTRAP_SERVERS="kafka-1:9092"
