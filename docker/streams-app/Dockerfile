@@ -3,7 +3,7 @@ FROM maven:3.8-ibm-semeru-21-jdk AS builder
 
 WORKDIR /app
 COPY pom.xml.
-COPY src./src
+COPY src ./src
 
 # Build the application and create a fat JAR
 RUN mvn clean package
