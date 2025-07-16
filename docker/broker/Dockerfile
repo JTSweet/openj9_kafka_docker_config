@@ -46,9 +46,8 @@ RUN mkdir -p /opt/share/class_cache && chmod -R 777 /opt/share/class_cache
 # We use a minimal heap and expect it to exit with a non-zero code via timeout.
 RUN KAFKA_HEAP_OPTS="-Xmx256m -Xms256m" \
     KAFKA_OPTS="-Xshareclasses:name=kafka,cacheDir=/opt/share/class_cache,persistent" \
-    timeout 60s kafka-server-start.sh ${KAFKA_HOME}/config/kraft/server.properties |
+    timeout 60s kafka-server-start.sh ${KAFKA_HOME}/config/kraft/server.properties 
 
-| \
     echo "CDS priming run completed."
 
 # --- Final Container Configuration ---
