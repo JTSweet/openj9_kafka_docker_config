@@ -1,48 +1,64 @@
-# Stage 1: Builder
-# Use the full JDK image to extract the Kafka distribution.
-FROM ibm-semeru-runtimes:open-21-jdk AS builder
+# Set environment variables
+ENV KAFKA_VERSION=4.0.0
+ENV SCALA_VERSION=2.13
+ENV KAFKA_HOME=/opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION}
+ENV PATH=${KAFKA_HOME}/bin:${PATH}
 
-WORKDIR /build
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    gradle \
+    patch \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy the entire source code context which includes the distribution tarball.
-COPY . .
+# Clone Apache Kafka repository
+WORKDIR /usr/src
+RUN git clone --depth 1 --branch ${KAFKA_VERSION} https://github.com/apache/kafka.git
 
-# Find the distribution tarball and extract it.
-RUN KAFKA_TGZ=$(find . -name 'kafka_*.tgz' | head -n 1) && \
-    tar -xzf "$KAFKA_TGZ" -C /opt && \
-    # Rename the extracted directory to a predictable name.
-    mv /opt/kafka_* /opt/kafka
+# Build Kafka from source
+WORKDIR /usr/src/kafka
+RUN ./gradlew releaseTarGz
 
-# Stage 2: Final Image
-# Use the full JDK base image for the final runtime to include diagnostic tools
-# such as jcmd for generating heap dumps or thread dumps (javacores).
-FROM ibm-semeru-runtimes:open-21-jdk
+# Unpack the built Kafka distribution and clean up
+RUN tar -xzf /usr/src/kafka/core/build/distributions/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -C /opt \
+    && rm -rf /usr/src/kafka \
+    && rm -rf /root/.gradle
 
-ENV KAFKA_HOME=/opt/kafka
-ENV PATH=$PATH:$KAFKA_HOME/bin
+# --- JVM Customization ---
 
-# Create a non-root user and group for security.
-RUN groupadd -r kafka && useradd -r -g kafka kafka
+# Copy the patch file into the image
+COPY kafka-run-class.patch /tmp/
 
-# Copy only the necessary files from the builder stage.
-COPY --from=builder /opt/kafka $KAFKA_HOME
+# Apply the patch to the kafka-run-class.sh script
+RUN patch ${KAFKA_HOME}/bin/kafka-run-class.sh < /tmp/kafka-run-class.patch \
+    && rm /tmp/kafka-run-class.patch
 
-# Copy the custom entrypoint script.
-COPY docker/broker/docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# --- Class Data Sharing (CDS) Cache Priming ---
 
-# Create data directory and set ownership to the kafka user.
-RUN mkdir -p /var/lib/kafka/data && \
-    chown -R kafka:kafka /var/lib/kafka && \
-    chown -R kafka:kafka $KAFKA_HOME
+# Create a directory for the persistent shared class cache
+RUN mkdir -p /opt/share/class_cache && chmod -R 777 /opt/share/class_cache
 
-# Switch to the non-root user.
-USER kafka
+# Prime the CDS cache by running the server briefly.
+# This populates the cache with core Kafka classes for faster startup.
+# We use a minimal heap and expect it to exit with a non-zero code via timeout.
+RUN KAFKA_HEAP_OPTS="-Xmx256m -Xms256m" \
+    KAFKA_OPTS="-Xshareclasses:name=kafka,cacheDir=/opt/share/class_cache,persistent" \
+    timeout 60s kafka-server-start.sh ${KAFKA_HOME}/config/kraft/server.properties |
 
-VOLUME ["/var/lib/kafka/data"]
+| \
+    echo "CDS priming run completed."
 
-# Expose ports for client connections and the KRaft controller protocol.
-EXPOSE 9092 9093
+# --- Final Container Configuration ---
 
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["kafka-server-start.sh", "/opt/kafka/config/kraft/server.properties"]
+# Copy the simplified entrypoint script
+COPY docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
+
+# Expose Kafka ports
+EXPOSE 9092
+
+# Set the entrypoint
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
+# Default command to start a Kafka broker
+CMD ["kafka-server-start.sh", "/opt/kafka_2.13-4.0.0/config/kraft/server.properties"]
