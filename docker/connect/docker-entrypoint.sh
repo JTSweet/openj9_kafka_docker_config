@@ -8,5 +8,8 @@ if -z "${CONNECT_REST_ADVERTISED_HOST_NAME}"; then
 fi
 echo "Advertised REST Host Name: ${CONNECT_REST_ADVERTISED_HOST_NAME}"
 
+# Set OpenJ9 specific JVM options
+export KAFKA_OPTS="-Xshareclasses -Xquickstart -Xgcpolicy:gencon"
+
 # Execute the command passed to the entrypoint
 exec "$@"
