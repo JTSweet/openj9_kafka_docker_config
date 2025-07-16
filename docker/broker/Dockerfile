@@ -8,7 +8,7 @@ WORKDIR /build
 COPY . .
 
 # Find the distribution tarball and extract it.
-RUN KAFKA_TGZ=$(find. -name 'kafka_*.tgz' | head -n 1) && \
+RUN KAFKA_TGZ=$(find . -name 'kafka_*.tgz' | head -n 1) && \
     tar -xzf "$KAFKA_TGZ" -C /opt && \
     # Rename the extracted directory to a predictable name.
     mv /opt/kafka_* /opt/kafka
