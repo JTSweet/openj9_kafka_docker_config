@@ -1,5 +1,5 @@
 # Use the official IBM Semeru Runtime with OpenJ9 JDK 21 as the base image
-FROM ibm-semeru-runtimes:open-21-jdk
+FROM ibm-semeru-runtimes:open-21-jdk AS builder
 
 # Set environment variables
 ENV KAFKA_VERSION=4.0.0
