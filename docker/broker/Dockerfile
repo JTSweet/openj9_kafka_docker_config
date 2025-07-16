@@ -48,7 +48,7 @@ RUN KAFKA_HEAP_OPTS="-Xmx256m -Xms256m" \
     KAFKA_OPTS="-Xshareclasses:name=kafka,cacheDir=/opt/share/class_cache,persistent" \
     timeout 60s kafka-server-start.sh ${KAFKA_HOME}/config/kraft/server.properties 
 
-    echo "CDS priming run completed."
+RUN echo "CDS priming run completed."
 
 # --- Final Container Configuration ---
 
