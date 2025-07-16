@@ -15,7 +15,7 @@ if [! -f "/var/lib/kafka/data/meta.properties" ]; then
 fi
 
 # Set OpenJ9 specific JVM options, overriding the script defaults which are for HotSpot.
-export KAFKA_OPTS="-Xshareclasses -Xquickstart -Xgcpolicy:gencon"
+export KAFKA_OPTS="-Xshareclasses:none -Xgcpolicy:gencon"
 
 # Execute the command passed to the entrypoint (e.g., kafka-server-start.sh)
 exec "$@"
