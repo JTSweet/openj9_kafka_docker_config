@@ -10,7 +10,7 @@ RUN mvn clean package
 
 # Stage 2: Final Image
 # Use the full JDK base image for the final runtime to include diagnostic tools.
-FROM ibm-semeru-runtimes:open-21-jdk
+FROM ibm-semeru-runtimes:open-21.0.7_6-jdk-jammy
 
 WORKDIR /app
 
