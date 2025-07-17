@@ -1,9 +1,6 @@
 # Base image using IBM Semeru with OpenJ9 on Ubuntu Jammy
 FROM ibm-semeru-runtimes:open-21-jre-jammy
 
-ARG KAFKA_VERSION
-ARG SCALA_VERSION
-
 ENV KAFKA_HOME=/opt/kafka
 ENV PATH="${KAFKA_HOME}/bin:${PATH}"
 
@@ -15,11 +12,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tini \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the Kafka distribution built in the Jenkins pipeline
-COPY --chown=kafka:kafka kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz /tmp/
-RUN tar -xzf /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -C /opt && \
-    mv /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} ${KAFKA_HOME} && \
-    rm /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz
+# Copy the statically named Kafka distribution built in the Jenkins pipeline
+COPY --chown=kafka:kafka kafka-distribution.tgz /tmp/
+
+# Extract the archive and move its contents from the dynamic folder name to a static one
+RUN tar -xzf /tmp/kafka-distribution.tgz -C /opt && \
+    mv /opt/kafka_* ${KAFKA_HOME} && \
+    rm /tmp/kafka-distribution.tgz
 
 # FIX: Use sed for a robust, self-contained modification of the startup script.
 # This is more reliable than using an external patch file.
