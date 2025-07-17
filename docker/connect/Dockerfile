@@ -17,7 +17,7 @@ RUN tar -xzf /tmp/kafka.tgz -C ${KAFKA_HOME} --strip-components=1 && \
     rm /tmp/kafka.tgz
 
 # Copy the entrypoint script
-COPY --chown=kafka:kafka docker-entrypoint.sh /
+COPY --chown=kafka:kafka /docker/connect/docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 
 USER kafka
