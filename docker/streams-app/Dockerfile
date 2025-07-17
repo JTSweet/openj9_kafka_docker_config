@@ -3,7 +3,7 @@ FROM ibm-semeru-runtimes:open-21.0.7_6-jdk-jammy AS builder
 
 WORKDIR /app
 COPY pom.xml .
-COPY app/src ./src
+COPY src ./src
 
 # Build the application and create a fat JAR
 RUN mvn clean package
@@ -12,12 +12,16 @@ RUN mvn clean package
 # Use the full JDK base image for the final runtime to include diagnostic tools.
 FROM ibm-semeru-runtimes:open-21.0.7_6-jdk-jammy
 
+# Create a non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
 WORKDIR /app
 
-# Copy the application JAR from the builder stage
-COPY --from=builder /app/target/wordcount-app-1.0-SNAPSHOT.jar .
+# Copy the fat JAR from the builder stage
+COPY --from=builder /app/target/kafka-streams-wordcount-*.jar./app.jar
 
-# The bootstrap servers will be passed via environment variable
-ENV KAFKA_BOOTSTRAP_SERVERS="kafka-1:9092"
+# Set user
+USER appuser
 
-CMD
+# Define the command to run the application
+CMD ["java", "-jar", "app.jar"]
