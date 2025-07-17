@@ -31,7 +31,7 @@ RUN tar -xzf /usr/src/kafka/core/build/distributions/kafka_${SCALA_VERSION}-${KA
 # --- JVM Customization for OpenJ9 ---
 
 # Copy the universal patch file into the image
-COPY kafka-run-class.patch /tmp/
+COPY docker/connect/kafka-run-class.patch /tmp/
 
 # Apply the patch to the kafka-run-class.sh script
 RUN patch ${KAFKA_HOME}/bin/kafka-run-class.sh < /tmp/kafka-run-class.patch \
