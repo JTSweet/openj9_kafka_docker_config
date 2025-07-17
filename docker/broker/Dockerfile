@@ -1,5 +1,5 @@
 # Base image using IBM Semeru with OpenJ9 on Ubuntu Jammy
-FROM ibm-semeru-runtimes:open-21-jre-jammy AS builder
+FROM ibm-semeru-runtimes:open-21-jdk-jammy AS builder
 
 # Use ARGs to allow the Kafka and Scala versions to be passed in from the 'docker build' command.
 # This makes the Dockerfile more reusable and independent of hardcoded versions.
@@ -24,7 +24,7 @@ RUN tar -xzf kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz && \
 
 # Stage 2: Final Image - This stage builds the lean, production-ready image.
 # It starts from a minimal IBM Semeru JRE base image to reduce size and attack surface.
-FROM ibm-semeru-runtimes:open-21-jre-jammy
+FROM ibm-semeru-runtimes:open-21-jdk-jammy
 
 # Set environment variables for the Kafka home directory and add its 'bin' to the system PATH.
 ENV KAFKA_HOME=/opt/kafka
@@ -38,7 +38,7 @@ COPY --from=builder /opt/kafka /opt/kafka
 # The properties file is named '.template' to indicate it will be processed by the entrypoint.
 # These paths are relative to the build context (the Jenkins workspace root).
 COPY docker/broker/docker-entrypoint.sh /
-COPY docker/broker/server.properties /opt/kafka/config/kraft/server.properties.template
+COPY docker/config/broker/server.properties /opt/kafka/config/kraft/server.properties.template
 
 # Create a dedicated, non-root user ('kafka') for running the application.
 # This is a critical security best practice to limit the potential impact of a container compromise.
