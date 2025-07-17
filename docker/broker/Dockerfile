@@ -62,7 +62,9 @@ RUN mkdir /opt/kafka/scc && \
 # -Xgcpolicy:gencon: Uses the generational concurrent garbage collector, ideal for responsive applications.
 # -Xdisableexplicitgc: Prevents application code from forcing disruptive garbage collection cycles.
 # -Xtune:virtualized: Optimizes the JVM for running in a cloud/virtualized environment.
-ENV KAFKA_OPTS="-XX:+UseContainerSupport -Xshareclasses:name=kafka,cacheDir=/opt/kafka/scc,readonly,nonfatal -Xgcpolicy:gencon -Xdisableexplicitgc -Xtune:virtualized"
+ENV KAFKA_OPTS="-XX:+UseContainerSupport"
+ENV KAFKA_JVM_PERFORMANCE_OPTS="-Xshareclasses:name=kafka,cacheDir=/opt/kafka/scc,readonly,nonfatal -Xdisableexplicitgc -Xtune:virtualized"
+ENV KAFKA_GC_LOG_OPTS="-Xgcpolicy:gencon"
 
 # Switch the active user from 'root' to the newly created 'kafka' user.
 USER kafka
