@@ -1,6 +1,11 @@
 # Base image using IBM Semeru with OpenJ9 on Ubuntu Jammy
 FROM ibm-semeru-runtimes:open-21-jre-jammy
 
+# Set OpenJ9 specific JVM options as environment variables.
+# This cleanly overrides the HotSpot defaults in kafka-run-class.sh.
+# We are enabling class data sharing, a key OpenJ9 performance feature.
+ENV KAFKA_JVM_PERFORMANCE_OPTS="-Xshareclasses:name=kafka,cacheDir=/opt/shareclasses -XX:+UseJITServer"
+
 ENV KAFKA_HOME=/opt/kafka
 ENV PATH="${KAFKA_HOME}/bin:${PATH}"
 
@@ -12,21 +17,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tini \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the statically named Kafka distribution built in the Jenkins pipeline
+# Copy the statically named Kafka distribution from the Jenkins workspace
 COPY --chown=kafka:kafka kafka-distribution.tgz /tmp/
 
-# Extract the archive and move its contents from the dynamic folder name to a static one
+# Extract the archive and move its contents to a static directory
 RUN tar -xzf /tmp/kafka-distribution.tgz -C /opt && \
     mv /opt/kafka_* ${KAFKA_HOME} && \
     rm /tmp/kafka-distribution.tgz
 
-# FIX: Use sed for a robust, self-contained modification of the startup script.
-# This is more reliable than using an external patch file.
-# This example prepends OpenJ9-specific options for class sharing to the performance flags.
-RUN sed -i '/^KAFKA_JVM_PERFORMANCE_OPTS=/ s/"$/ -Xshareclasses:name=kafka,cacheDir=\/opt\/shareclasses -XX:+UseJITServer"/' ${KAFKA_HOME}/bin/kafka-run-class.sh
+# FIX: Create and set permissions for essential directories
+RUN mkdir -p /var/lib/kafka/data ${KAFKA_HOME}/logs /opt/shareclasses && \
+    chown -R kafka:kafka /var/lib/kafka/data ${KAFKA_HOME}/logs /opt/shareclasses
 
-# Create directories for data and set permissions
-RUN mkdir -p /var/lib/kafka/data && chown -R kafka:kafka /var/lib/kafka/data
+# REMOVED: The patch command is no longer needed as we use ENV for JVM options.
+# COPY kafka-run-class.patch /tmp/kafka-run-class.patch
+# RUN patch ${KAFKA_HOME}/bin/kafka-run-class.sh < /tmp/kafka-run-class.patch \
+#     && rm /tmp/kafka-run-class.patch
 
 # Set the working directory and user
 WORKDIR ${KAFKA_HOME}
