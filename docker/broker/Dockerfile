@@ -22,7 +22,7 @@ RUN tar -xzf /tmp/kafka.tgz -C ${KAFKA_HOME} --strip-components=1 && \
     rm /tmp/kafka.tgz
 
 # Copy the entrypoint script and set permissions
-COPY --chown=kafka:kafka docker-entrypoint.sh /
+COPY --chown=kafka:kafka /docker/broker/docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 
 # Switch to the non-root user
