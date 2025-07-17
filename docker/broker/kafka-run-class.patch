@@ -2,6 +2,7 @@
 +++ b/bin/kafka-run-class.sh
 @@ -282,6 +282,23 @@
    KAFKA_JVM_PERFORMANCE_OPTS=""
+   KAFKA_GC_LOG_OPTS=""
  fi
  
 +# === BEGIN IBM SEMERU OPENJ9 JVM-AWARE PATCH ===
@@ -22,6 +23,9 @@
 +fi
 +# === END IBM SEMERU OPENJ9 JVM-AWARE PATCH ===
 +
+CDS_CACHE_NAME=kafka_shared
+# Set KAFKA_JVM_PERFORMANCE_OPTS
+KAFKA_JVM_PERFORMANCE_OPTS="-Xgcpolicy:gencon -Xdisableexplicitgc -Xshareclasses:name=${CDS_CACHE_NAME},cacheDir=/opt/share/class_cache"
+
  # JMX settings
- if; then
-   KAFKA_JMX_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false "
+   KAFKA_JMX_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false"
