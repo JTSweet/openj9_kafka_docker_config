@@ -1,41 +1,33 @@
-# Base image using IBM Semeru with OpenJ9 on Ubuntu Jammy
 FROM ibm-semeru-runtimes:open-21-jdk-jammy
 
-# Set OpenJ9 specific JVM options as environment variables.
-ENV KAFKA_JVM_PERFORMANCE_OPTS="-Xshareclasses:name=kafka-connect,cacheDir=/opt/shareclasses -XX:+UseJITServer"
-
 ENV KAFKA_HOME=/opt/kafka
-ENV PATH="${KAFKA_HOME}/bin:${PATH}"
+ENV LANG=en_US.UTF-8
+# Define a path for connectors that can be mounted via a volume
+ENV KAFKA_CONNECT_PLUGINS_DIR=${KAFKA_HOME}/plugins
 
-# Create a non-root user
-RUN groupadd -r kafka && useradd -r -g kafka kafka
+RUN groupadd -r kafka && useradd -r -g kafka -d ${KAFKA_HOME} -s /sbin/nologin kafka
 
-# Install necessary build tools, including 'coreutils' for the 'timeout' command.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    tini \
-    git \
-    patch \
-    coreutils \
-    && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p ${KAFKA_HOME} ${KAFKA_CONNECT_PLUGINS_DIR} /opt/kafka/scc && \
+    chown -R kafka:kafka ${KAFKA_HOME} ${KAFKA_CONNECT_PLUGINS_DIR} /opt/kafka/scc
 
-# Copy the statically named Kafka distribution
-COPY --chown=kafka:kafka kafka-distribution.tgz /tmp/
+# Copy the pre-built Kafka artifacts
+COPY --chown=kafka:kafka artifacts/kafka_2.13-*.tgz /tmp/kafka.tgz
 
-# Extract the archive and move its contents to a static directory
-RUN tar -xzf /tmp/kafka-distribution.tgz -C /opt && \
-    mv /opt/kafka_* ${KAFKA_HOME} && \
-    rm /tmp/kafka-distribution.tgz
+RUN tar -xzf /tmp/kafka.tgz -C ${KAFKA_HOME} --strip-components=1 && \
+    rm /tmp/kafka.tgz
 
-# FIX: Create and set permissions for essential directories
-RUN mkdir -p ${KAFKA_HOME}/connect-plugins /opt/shareclasses && \
-    chown -R kafka:kafka ${KAFKA_HOME}/connect-plugins /opt/shareclasses
+# Copy the entrypoint script
+COPY --chown=kafka:kafka docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
 
-# Set working directory and user
-WORKDIR ${KAFKA_HOME}
 USER kafka
 
-# Expose port
+# Expose a volume for adding connector plugins without rebuilding the image
+VOLUME
+
+# Expose the default Kafka Connect REST API port
 EXPOSE 8083
 
-ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["connect-distributed.sh", "config/connect-distributed.properties"]
+ENTRYPOINT [ "/docker-entrypoint.sh" ]
+
+CMD [ "connect-distributed.sh", "/opt/kafka/config/connect-distributed.properties" ]
