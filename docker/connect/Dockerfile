@@ -43,7 +43,7 @@ RUN patch ${KAFKA_HOME}/bin/kafka-run-class.sh < /tmp/kafka-run-class.patch \
 RUN mkdir -p /opt/share/class_cache && chmod -R 777 /opt/share/class_cache
 
 # Copy a minimal properties file needed for the cache priming step
-COPY connect-distributed-prime.properties ${KAFKA_HOME}/config/
+COPY docker/connect/connect-distributed-prime.properties ${KAFKA_HOME}/config/
 
 # Prime the Class Data Sharing (CDS) cache by running Kafka Connect briefly.
 # This populates the cache with Connect-specific classes for faster startup.
