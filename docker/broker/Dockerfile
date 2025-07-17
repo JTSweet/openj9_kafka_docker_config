@@ -11,7 +11,8 @@ WORKDIR /tmp
 
 # Copy the Kafka.tgz file created by the Gradle 'releaseTarGz' task from the build context.
 # The path 'core/build/distributions/' is relative to the Jenkins workspace root where the build occurs.
-COPY core/build/distributions/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz.
+# A space is required between the source file and the destination directory ('.').
+COPY core/build/distributions/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz .
 
 # Unpack the archive. Then, create a symbolic link to a clean, version-independent path (/opt/kafka).
 # This simplifies downstream paths. Finally, remove the archive to keep the layer clean.
@@ -23,7 +24,7 @@ RUN tar -xzf kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz && \
 
 # Stage 2: Final Image - This stage builds the lean, production-ready image.
 # It starts from a minimal IBM Semeru JRE base image to reduce size and attack surface.
-FROM ibm-semeru-runtimes:open-21-jre
+FROM ibm-semeru-runtimes:open-21-jre-jammy
 
 # Set environment variables for the Kafka home directory and add its 'bin' to the system PATH.
 ENV KAFKA_HOME=/opt/kafka
@@ -68,17 +69,6 @@ USER kafka
 
 # Set the working directory to the Kafka home directory for the running process.
 WORKDIR $KAFKA_HOME
-
-# Expose the default Kafka broker port.
-EXPOSE 9092
-
-# Set the entrypoint to our custom script.
-ENTRYPOINT ["/docker-entrypoint.sh"]
-
-# Provide the default command that will be passed as arguments to the entrypoint script.
-# This starts the Kafka server using the configuration file our script will create.
-CMD ["kafka-server-start.sh", "config/kraft/server.properties"]
-
 
 # Provide the default command that will be passed as arguments to the entrypoint script.
 # This starts the Kafka server using the configuration file our script will create.
