@@ -3,7 +3,7 @@ FROM ibm-semeru-runtimes:open-21.0.7_6-jdk-jammy AS builder
 
 WORKDIR /app
 COPY pom.xml .
-COPY src ./src
+COPY app/src ./src
 
 # Build the application and create a fat JAR
 RUN mvn clean package
