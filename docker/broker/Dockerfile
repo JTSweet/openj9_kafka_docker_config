@@ -1,66 +1,41 @@
-# Use the official IBM Semeru Runtime with OpenJ9 JDK 21 as the base image
-FROM ibm-semeru-runtimes:open-21.0.7_6-jdk-jammy AS builder
+# Base image using IBM Semeru with OpenJ9 on Ubuntu Jammy
+FROM ibm-semeru-runtimes:open-21-jre-jammy
 
-# Set environment variables
-ENV KAFKA_VERSION=4.0.0
-ENV SCALA_VERSION=2.13
-ENV KAFKA_HOME=/opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION}
-ENV PATH=${KAFKA_HOME}/bin:${PATH}
+ARG KAFKA_VERSION
+ARG SCALA_VERSION
 
-# Install build dependencies
+ENV KAFKA_HOME=/opt/kafka
+ENV PATH="${KAFKA_HOME}/bin:${PATH}"
+
+# Create a non-root user for security
+RUN groupadd -r kafka && useradd -r -g kafka kafka
+
+# Install necessary utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    gradle \
-    patch \
+    tini \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone Apache Kafka repository
-WORKDIR /usr/src
-RUN git clone --depth 1 --branch ${KAFKA_VERSION} https://github.com/apache/kafka.git
+# Copy the Kafka distribution built in the Jenkins pipeline
+COPY --chown=kafka:kafka kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz /tmp/
+RUN tar -xzf /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -C /opt && \
+    mv /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} ${KAFKA_HOME} && \
+    rm /tmp/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz
 
-# Build Kafka from source
-WORKDIR /usr/src/kafka
-RUN ./gradlew releaseTarGz
+# FIX: Use sed for a robust, self-contained modification of the startup script.
+# This is more reliable than using an external patch file.
+# This example prepends OpenJ9-specific options for class sharing to the performance flags.
+RUN sed -i '/^KAFKA_JVM_PERFORMANCE_OPTS=/ s/"$/ -Xshareclasses:name=kafka,cacheDir=\/opt\/shareclasses -XX:+UseJITServer"/' ${KAFKA_HOME}/bin/kafka-run-class.sh
 
-# Unpack the built Kafka distribution and clean up
-RUN tar -xzf /usr/src/kafka/core/build/distributions/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz -C /opt \
-    && rm -rf /usr/src/kafka \
-    && rm -rf /root/.gradle
+# Create directories for data and set permissions
+RUN mkdir -p /var/lib/kafka/data && chown -R kafka:kafka /var/lib/kafka/data
 
-# --- JVM Customization ---
+# Set the working directory and user
+WORKDIR ${KAFKA_HOME}
+USER kafka
 
-# Copy the patch file into the image
-COPY docker/broker/kafka-run-class.patch /tmp/
-
-# Apply the patch to the kafka-run-class.sh script
-RUN patch ${KAFKA_HOME}/bin/kafka-run-class.sh < /tmp/kafka-run-class.patch \
-    && rm /tmp/kafka-run-class.patch
-
-# --- Class Data Sharing (CDS) Cache Priming ---
-
-# Create a directory for the persistent shared class cache
-RUN mkdir -p /opt/share/class_cache && chmod -R 777 /opt/share/class_cache
-
-# Prime the CDS cache by running the server briefly.
-# This populates the cache with core Kafka classes for faster startup.
-# We use a minimal heap and expect it to exit with a non-zero code via timeout.
-RUN KAFKA_HEAP_OPTS="-Xmx256m -Xms256m" \
-    KAFKA_OPTS="-Xshareclasses:name=kafka,cacheDir=/opt/share/class_cache,persistent" \
-    timeout 60s kafka-server-start.sh ${KAFKA_HOME}/config/kraft/server.properties 
-
-RUN echo "CDS priming run completed."
-
-# --- Final Container Configuration ---
-
-# Copy a generic, simplified entrypoint script
-COPY docker/broker/docker-entrypoint.sh /
-RUN chmod +x /docker-entrypoint.sh
-
-# Expose Kafka ports
+# Expose ports
 EXPOSE 9092 9093
 
-# Set the entrypoint
-ENTRYPOINT ["/docker-entrypoint.sh"]
-
-# Default command to start a Kafka broker
-CMD ["kafka-server-start.sh", "/opt/kafka_2.13-4.0.0/config/kraft/server.properties"]
+# Use tini as the entrypoint to handle signals correctly
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["kafka-server-start.sh", "config/kraft/server.properties"]
