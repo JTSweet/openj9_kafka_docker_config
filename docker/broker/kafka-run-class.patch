@@ -1,31 +1,10 @@
---- a/bin/kafka-run-class.sh
-+++ b/bin/kafka-run-class.sh
-@@ -282,6 +282,23 @@
-   KAFKA_JVM_PERFORMANCE_OPTS=""
-   KAFKA_GC_LOG_OPTS=""
- fi
+KAFKA_JVM_PERFORMANCE_OPTS=""
+KAFKA_GC_LOG_OPTS=""
  
-+# === BEGIN IBM SEMERU OPENJ9 JVM-AWARE PATCH ===
-+# Dynamically set JVM performance options based on the detected JVM.
-+# This overrides the default HotSpot-centric flags when running on OpenJ9.
-+if [[ "$($JAVA -version 2>&1)" =~ "OpenJ9" ]]; then
-+  echo "OpenJ9 JVM detected. Setting OpenJ9-specific performance options."
-+  # Unset any potentially inherited HotSpot-specific GC logging flags
-+  unset KAFKA_GC_LOG_OPTS
-+
-+  # Use a component-specific cache name if provided, otherwise default to 'kafka_shared'
-+  CDS_CACHE_NAME=${KAFKA_CDS_CACHE_NAME:-kafka_shared}
-+
-+  # Set performance options optimized for IBM Semeru OpenJ9
-+  export KAFKA_JVM_PERFORMANCE_OPTS="-Xgcpolicy:gencon -Xdisableexplicitgc -Xshareclasses:name=${CDS_CACHE_NAME},cacheDir=/opt/share/class_cache"
-+else
-+  echo "HotSpot or other JVM detected. Using default performance options."
-+fi
-+# === END IBM SEMERU OPENJ9 JVM-AWARE PATCH ===
-+
 CDS_CACHE_NAME=kafka_shared
+
 # Set KAFKA_JVM_PERFORMANCE_OPTS
 KAFKA_JVM_PERFORMANCE_OPTS="-Xgcpolicy:gencon -Xdisableexplicitgc -Xshareclasses:name=${CDS_CACHE_NAME},cacheDir=/opt/share/class_cache"
 
- # JMX settings
-   KAFKA_JMX_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false"
+# JMX settings
+KAFKA_JMX_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false  -Dcom.sun.management.jmxremote.ssl=false"
