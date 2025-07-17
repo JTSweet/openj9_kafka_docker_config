@@ -1,46 +1,41 @@
-# Base image using IBM Semeru with OpenJ9 on Ubuntu Jammy
-FROM ibm-semeru-runtimes:open-21-jre-jammy
+# Stage 1: Build the final image
+FROM ibm-semeru-runtimes:open-21-jdk-jammy
 
-# Set OpenJ9 specific JVM options as environment variables.
-# This cleanly overrides the HotSpot defaults in kafka-run-class.sh.
-# We are enabling class data sharing, a key OpenJ9 performance feature.
-ENV KAFKA_JVM_PERFORMANCE_OPTS="-Xshareclasses:name=kafka,cacheDir=/opt/shareclasses -XX:+UseJITServer"
-
+# Define environment variables
 ENV KAFKA_HOME=/opt/kafka
-ENV PATH="${KAFKA_HOME}/bin:${PATH}"
+ENV KAFKA_LOG_DIRS=/var/lib/kafka/data
+ENV LANG=en_US.UTF-8
 
-# Create a non-root user for security
-RUN groupadd -r kafka && useradd -r -g kafka kafka
+# Create a dedicated non-root user and group for Kafka
+RUN groupadd -r kafka && useradd -r -g kafka -d ${KAFKA_HOME} -s /sbin/nologin kafka
 
-# Install necessary utilities
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    tini \
-    && rm -rf /var/lib/apt/lists/*
+# Create necessary directories and set permissions
+RUN mkdir -p ${KAFKA_HOME} /var/lib/kafka/data /opt/kafka/scc && \
+    chown -R kafka:kafka ${KAFKA_HOME} /var/lib/kafka/data /opt/kafka/scc
 
-# Copy the statically named Kafka distribution from the Jenkins workspace
-COPY --chown=kafka:kafka kafka-distribution.tgz /tmp/
+# Copy the pre-built Kafka artifacts from your Jenkins build stage
+# Ensure the artifacts are placed in a location accessible to the Docker build context
+COPY --chown=kafka:kafka artifacts/kafka_2.13-*.tgz /tmp/kafka.tgz
 
-# Extract the archive and move its contents to a static directory
-RUN tar -xzf /tmp/kafka-distribution.tgz -C /opt && \
-    mv /opt/kafka_* ${KAFKA_HOME} && \
-    rm /tmp/kafka-distribution.tgz
+# Extract Kafka and clean up
+RUN tar -xzf /tmp/kafka.tgz -C ${KAFKA_HOME} --strip-components=1 && \
+    rm /tmp/kafka.tgz
 
-# FIX: Create and set permissions for essential directories
-RUN mkdir -p /var/lib/kafka/data ${KAFKA_HOME}/logs /opt/shareclasses && \
-    chown -R kafka:kafka /var/lib/kafka/data ${KAFKA_HOME}/logs /opt/shareclasses
+# Copy the entrypoint script and set permissions
+COPY --chown=kafka:kafka docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
 
-# REMOVED: The patch command is no longer needed as we use ENV for JVM options.
-# COPY kafka-run-class.patch /tmp/kafka-run-class.patch
-# RUN patch ${KAFKA_HOME}/bin/kafka-run-class.sh < /tmp/kafka-run-class.patch \
-#     && rm /tmp/kafka-run-class.patch
-
-# Set the working directory and user
-WORKDIR ${KAFKA_HOME}
+# Switch to the non-root user
 USER kafka
 
-# Expose ports
+# Declare a volume for persistent Kafka log data
+VOLUME [ "/var/lib/kafka/data" ]
+
+# Expose ports for client connections (9092) and KRaft controller quorum (9093)
 EXPOSE 9092 9093
 
-# Use tini as the entrypoint to handle signals correctly
-ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["kafka-server-start.sh", "config/kraft/server.properties"]
+# Set the entrypoint to our custom script
+ENTRYPOINT [ "/docker-entrypoint.sh" ]
+
+# Define the default command to start the Kafka server
+CMD [ "kafka-server-start.sh", "/opt/kafka/config/kraft/server.properties" ]
