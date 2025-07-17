@@ -27,11 +27,6 @@ if; then
     sed -i "s|^controller.quorum.voters=.*|controller.quorum.voters=$KAFKA_CONTROLLER_QUORUM_VOTERS|g" "$CONFIG_FILE"
 fi
 
-# Additional replacements for listeners, advertised listeners, log directories, etc.,
-# should be added here following the same pattern.
-# if; then... fi
-# if; then... fi
-
 # --- Execution Section ---
 # The 'exec' command is critical. It replaces the current shell process with the
 # command passed as arguments to this script (the CMD from the Dockerfile).
