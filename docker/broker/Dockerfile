@@ -1,12 +1,3 @@
-# Stage 1: (Not used for final image contents, but included for completeness if it were a true multi-stage build artifact)
-FROM ubuntu:22.04 AS build_uuid_runtime
-
-# Update the package lists and install uuid-runtime (This is redundant for the final image as currently written)
-RUN apt-get update && apt-get install -y uuid-runtime
-
-# Optionally remove the apt cache to reduce image size (Also redundant for the final image)
-RUN rm -rf /var/lib/apt/lists/*
-
 # Stage 2: Final Kafka Image
 FROM ibm-semeru-runtimes:open-21-jdk-jammy
 
@@ -34,7 +25,6 @@ RUN mkdir -p ${KAFKA_HOME} /var/lib/kafka/data /opt/kafka/scc && \
 
 # --- Step 3: Copy and Extract Kafka Distribution ---
 # 3.1 Copy the pre-built Kafka artifacts into the build context
-# Ensure 'kafka-distribution.tgz' is in the same directory as your Dockerfile or specified via build context
 COPY --chown=kafka:kafka kafka-distribution.tgz /tmp/kafka.tgz
 
 # 3.2 Extract Kafka and remove the temporary archive
@@ -44,22 +34,31 @@ RUN tar -xzf /tmp/kafka.tgz -C ${KAFKA_HOME} --strip-components=1 && \
 # 3.3 Set executable permissions for Kafka scripts
 RUN chmod +x ${KAFKA_HOME}/bin/*.sh
 
-# --- Step 4: Configure Entrypoint and Startup Command ---
-# 4.1 Copy the custom entrypoint script and set permissions
+# --- Step 4: Configure Server Properties and Entrypoint ---
+# 4.1 Confirm the location of the default server.properties file
+#     This RUN command will list the contents of the config directory,
+#     and the output will be visible during the Docker build process.
+RUN ls -l ${KAFKA_HOME}/config/
+
+# 4.2 Copy the default server.properties to the /opt/kafka/config/kraft directory
+RUN cp ${KAFKA_HOME}/config/server.properties ${KAFKA_HOME}/config/kraft/server.properties && \
+    chown kafka:kafka ${KAFKA_HOME}/config/kraft/server.properties
+
+# 4.3 Copy the custom entrypoint script and set permissions
 COPY --chown=kafka:kafka docker/broker/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
-# 4.2 Switch to the non-root Kafka user
+# 4.4 Switch to the non-root Kafka user
 USER kafka
 
-# 4.3 Declare a volume for persistent Kafka log data (for data durability)
+# 4.5 Declare a volume for persistent Kafka log data (for data durability)
 VOLUME [ "/var/lib/kafka/data" ]
 
-# 4.4 Expose ports for client connections (9092) and KRaft controller quorum (9093)
+# 4.6 Expose ports for client connections (9092) and KRaft controller quorum (9093)
 EXPOSE 9092 9093
 
-# 4.5 Set the entrypoint to the custom script
+# 4.7 Set the entrypoint to the custom script
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
 
-# 4.6 Define the default command to start the Kafka server using the full path
+# 4.8 Define the default command to start the Kafka server
 CMD [ "kafka-server-start.sh", "/opt/kafka/config/kraft/server.properties" ]
