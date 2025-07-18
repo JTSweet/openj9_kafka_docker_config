@@ -13,17 +13,8 @@ KAFKA_LOG_DIRS=${KAFKA_LOG_DIRS:-/var/lib/kafka/data}
 # Generate a Cluster ID if not provided
 
     echo "CLUSTER_ID not provided, generating a new one."
-    CLUSTER_ID=$(kafka-storage.sh random-uuid)
+    CLUSTER_ID=$(uuidgen -r)
     echo "Generated CLUSTER_ID: ${CLUSTER_ID}"
-
-
-# Idempotent storage formatting
-# Check for the existence of the meta.properties file to determine if formatting is needed.
-
-    echo "Log directory is not formatted. Formatting with cluster ID ${CLUSTER_ID}..."
-    kafka-storage.sh format -t "${CLUSTER_ID}" -c /opt/kafka/config/kraft/server.properties
-
-    echo "Log directory already formatted. Skipping format."
 
 
 # Unset all hardcoded JVM options from Kafka's default scripts
