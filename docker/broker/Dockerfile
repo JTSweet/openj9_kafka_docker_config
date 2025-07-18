@@ -5,7 +5,7 @@ FROM ibm-semeru-runtimes:open-21.0.7_6-jdk-noble AS jdk_provider
 # Stage 2: Final Image
 # Start from the official Confluent Platform server image.
 ARG CONFLUENT_VERSION=8.0.0
-FROM confluentinc/cp-server:${CONFLUENT_VERSION}
+FROM apache/kafka:4.1.0-rc0
 
 # Define the target location for the new JDK inside the Confluent image.
 ENV JAVA_HOME=/usr/lib/jvm/ibm-semeru-openj9-21
