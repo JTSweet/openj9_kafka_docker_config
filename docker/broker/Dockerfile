@@ -41,8 +41,9 @@ RUN chmod +x ${KAFKA_HOME}/bin/*.sh
 RUN ls -l ${KAFKA_HOME}/config/
 
 # 4.2 Copy the default server.properties to the /opt/kafka/config/kraft directory
-RUN cp ${KAFKA_HOME}/config/server.properties ${KAFKA_HOME}/config/kraft/server.properties && \
-    chown kafka:kafka ${KAFKA_HOME}/config/kraft/server.properties
+RUN cp ${KAFKA_HOME}/config/server.properties ${KAFKA_HOME}/config/kraft/server.properties 
+
+RUN chown kafka:kafka ${KAFKA_HOME}/config/kraft/server.properties
 
 # 4.3 Copy the custom entrypoint script and set permissions
 COPY --chown=kafka:kafka docker/broker/docker-entrypoint.sh /docker-entrypoint.sh
