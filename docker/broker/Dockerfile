@@ -10,8 +10,9 @@ ENV LANG=en_US.UTF-8
 RUN groupadd -r kafka && useradd -r -g kafka -d ${KAFKA_HOME} -s /sbin/nologin kafka
 
 # Install uuid-runtime for uuidgen command
-RUN sudo apt update
-RUN sudo apt install -y uuid-runtime
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y uuid-runtime
 
 # Create necessary directories and set permissions
 RUN mkdir -p ${KAFKA_HOME} /var/lib/kafka/data /opt/kafka/scc && \
