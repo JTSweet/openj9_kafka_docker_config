@@ -1,3 +1,8 @@
+# Install uuid-runtime for uuidgen command
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y uuid-runtime
+
 # Stage 1: Build the final image
 FROM ibm-semeru-runtimes:open-21-jdk-jammy
 
@@ -8,11 +13,6 @@ ENV LANG=en_US.UTF-8
 
 # Create a dedicated non-root user and group for Kafka
 RUN groupadd -r kafka && useradd -r -g kafka -d ${KAFKA_HOME} -s /sbin/nologin kafka
-
-# Install uuid-runtime for uuidgen command
-FROM ubuntu:22.04
-
-RUN apt-get update && apt-get install -y uuid-runtime
 
 # Create necessary directories and set permissions
 RUN mkdir -p ${KAFKA_HOME} /var/lib/kafka/data /opt/kafka/scc && \
