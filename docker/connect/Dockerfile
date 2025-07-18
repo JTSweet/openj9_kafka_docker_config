@@ -23,7 +23,7 @@ RUN chmod +x /docker-entrypoint.sh
 USER kafka
 
 # Expose a volume for adding connector plugins without rebuilding the image
-VOLUME
+VOLUME /opt/connector_plugins
 
 # Expose the default Kafka Connect REST API port
 EXPOSE 8083
