@@ -15,7 +15,7 @@ RUN mkdir -p ${KAFKA_HOME} /var/lib/kafka/data /opt/kafka/scc && \
 
 # Copy the pre-built Kafka artifacts from your Jenkins build stage
 # Ensure the artifacts are placed in a location accessible to the Docker build context
-COPY --chown=kafka:kafka artifacts/kafka_2.13-*.tgz /tmp/kafka.tgz
+COPY --chown=kafka:kafka kafka-distribution.tgz /tmp/kafka.tgz
 
 # Extract Kafka and clean up
 RUN tar -xzf /tmp/kafka.tgz -C ${KAFKA_HOME} --strip-components=1 && \
