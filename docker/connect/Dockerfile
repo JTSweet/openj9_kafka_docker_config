@@ -11,7 +11,7 @@ RUN mkdir -p ${KAFKA_HOME} ${KAFKA_CONNECT_PLUGINS_DIR} /opt/kafka/scc && \
     chown -R kafka:kafka ${KAFKA_HOME} ${KAFKA_CONNECT_PLUGINS_DIR} /opt/kafka/scc
 
 # Copy the pre-built Kafka artifacts
-COPY --chown=kafka:kafka artifacts/kafka_2.13-*.tgz /tmp/kafka.tgz
+COPY --chown=kafka:kafka kafka-distribution.tgz /tmp/kafka.tgz
 
 RUN tar -xzf /tmp/kafka.tgz -C ${KAFKA_HOME} --strip-components=1 && \
     rm /tmp/kafka.tgz
