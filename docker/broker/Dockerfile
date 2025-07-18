@@ -1,3 +1,12 @@
+# Stage 1: (Not used for final image contents, but included for completeness if it were a true multi-stage build artifact)
+FROM ubuntu:22.04 AS build_uuid_runtime
+
+# Update the package lists and install uuid-runtime (This is redundant for the final image as currently written)
+RUN apt-get update && apt-get install -y uuid-runtime
+
+# Optionally remove the apt cache to reduce image size (Also redundant for the final image)
+RUN rm -rf /var/lib/apt/lists/*
+
 # Stage 2: Final Kafka Image
 FROM ibm-semeru-runtimes:open-21-jdk-jammy
 
@@ -36,30 +45,39 @@ RUN chmod +x ${KAFKA_HOME}/bin/*.sh
 
 # --- Step 4: Configure Server Properties and Entrypoint ---
 # 4.1 Confirm the location of the default server.properties file
-#     This RUN command will list the contents of the config directory,
-#     and the output will be visible during the Docker build process.
 RUN ls -l ${KAFKA_HOME}/config/
 
 # 4.2 Copy the default server.properties to the /opt/kafka/config/kraft directory
-# RUN cp ${KAFKA_HOME}/config/server.properties ${KAFKA_HOME}/config/kraft/server.properties 
+#RUN cp ${KAFKA_HOME}/config/server.properties ${KAFKA_HOME}/config/kraft/server.properties && \
+ #   chown kafka:kafka ${KAFKA_HOME}/config/kraft/server.properties
 
-# RUN chown kafka:kafka ${KAFKA_HOME}/config/kraft/server.properties
+# 4.3 Modify the Kafka startup script to bypass its complex JVM option assembly.
+# This gives you full control over the JVM arguments via a single env var.
+# The original script concatenates multiple KAFKA_*_OPTS variables. The script is
+# replaced with a single, predictable KAFKA_JVM_ARGS variable.
+# IMPORTANT: This sed command modifies a file that was just extracted.
+#            Ensure this modification is robust to Kafka upgrades or consider
+#            using a custom wrapper script if the base script location changes.
+RUN sed -i 's/exec $JAVA $KAFKA_HEAP_OPTS $KAFKA_JVM_PERFORMANCE_OPTS.*/exec $JAVA $KAFKA_JVM_ARGS $KAFKA_LOG4J_OPTS -cp $CLASSPATH $KAFKA_OPTS "$@"/' ${KAFKA_HOME}/bin/kafka-run-class.sh
 
-# 4.3 Copy the custom entrypoint script and set permissions
+# 4.4 Optional: Verify the Java version at build time
+RUN java -version
+
+# 4.5 Copy the custom entrypoint script and set permissions
 COPY --chown=kafka:kafka docker/broker/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
-# 4.4 Switch to the non-root Kafka user
+# 4.6 Switch to the non-root Kafka user
 USER kafka
 
-# 4.5 Declare a volume for persistent Kafka log data (for data durability)
+# 4.7 Declare a volume for persistent Kafka log data (for data durability)
 VOLUME [ "/var/lib/kafka/data" ]
 
-# 4.6 Expose ports for client connections (9092) and KRaft controller quorum (9093)
+# 4.8 Expose ports for client connections (9092) and KRaft controller quorum (9093)
 EXPOSE 9092 9093
 
-# 4.7 Set the entrypoint to the custom script
+# 4.9 Set the entrypoint to the custom script
 ENTRYPOINT [ "/docker-entrypoint.sh" ]
 
-# 4.8 Define the default command to start the Kafka server
+# 4.10 Define the default command to start the Kafka server
 CMD [ "kafka-server-start.sh", "/opt/kafka/config/server.properties" ]
