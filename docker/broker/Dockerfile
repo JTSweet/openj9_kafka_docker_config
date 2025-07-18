@@ -1,7 +1,16 @@
 # Install uuid-runtime for uuidgen command
+# Use the official Ubuntu 22.04 base image
 FROM ubuntu:22.04
 
+# Update the package lists and install uuid-runtime
 RUN apt-get update && apt-get install -y uuid-runtime
+
+# You can optionally remove the apt cache to reduce image size
+RUN rm -rf /var/lib/apt/lists/*
+
+# Your application code or other commands can go here
+# For example, you can demonstrate using uuidgen
+CMD ["uuidgen"]
 
 # Stage 1: Build the final image
 FROM ibm-semeru-runtimes:open-21-jdk-jammy
