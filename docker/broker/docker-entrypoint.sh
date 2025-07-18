@@ -2,9 +2,7 @@
 set -e
 
 # Exit if any of the required KRaft environment variables are not set
-if |
-
-| ||; then
+if; then
     echo "ERROR: KAFKA_PROCESS_ROLES, KAFKA_NODE_ID, and KAFKA_CONTROLLER_QUORUM_VOTERS must be set."
     exit 1
 fi
